@@ -3,7 +3,7 @@ from __future__ import annotations
 import subprocess
 from pathlib import Path
 
-from models import CommitContext
+from social_agent.models.models import CommitContext
 
 README_SNIPPET_CHARS = 1000
 README_CANDIDATES = ("README.md", "README.rst", "README.txt", "README")
