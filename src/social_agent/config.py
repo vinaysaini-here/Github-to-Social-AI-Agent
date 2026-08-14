@@ -21,6 +21,9 @@ class Settings(BaseSettings):
     prefilter_trivial_line_threshold: int = 2
     worthiness_threshold: int = 60
     max_verification_retries: int = 3
+    output_dir: str = "output/drafts"
+
+
 
 
 @lru_cache

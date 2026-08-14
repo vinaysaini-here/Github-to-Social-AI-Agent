@@ -1,81 +1,22 @@
-from __future__ import annotations
-
-import subprocess
-from pathlib import Path
-
-from social_agent.models.models import CommitContext
-
-README_SNIPPET_CHARS = 1000
-README_CANDIDATES = ("README.md", "README.rst", "README.txt", "README")
-
-class GitContextError(RuntimeError):
-    """Raised when the local git repo can't produce the context we need"""
-
-def _run_git(repo_path: Path, *args: str) -> str:
-    """Run a git command in the given repo and returns stdout, raising on failure."""
-
-    result = subprocess.run(
-        ["git","-C", str(repo_path), *args],
-        capture_output=True,
-        text=True,
-        timeout=10
-    )
-    if result.returncode !=0:
-        raise GitContextError(
-            f"git{' '.join(args)} failed in {repo_path}: {result.stderr.strip()}"
-        )
-    return result.stdout
+from pydantic import BaseModel, Field
 
 
-def _read_readme_snippet(repo_path: Path) -> str | None:
-    for name in README_CANDIDATES:
-        candidate = repo_path / name
-        if candidate.is_file():
-            text = candidate.read_text(encoding="utf-8" ,errors="ignore")
-            return text[:README_SNIPPET_CHARS]
-        return None
+class CommitContext(BaseModel):
+    """Everything the pipeline knows about a single commit.
 
-
-def collect_context(repo_path: str | Path, commit_sha:str = "HEAD") ->CommitContext:
-    """Collect diff, message, changed files, and README for one commit.
-    
-    Args:
-        repo_path: Path to a local git repository
-        commist_sha : commit to inspect. Defaults to the latest commit(HEAD).
-
-    Returns:
-        A populated CommitContext
-    
-        Raises:
-            GitContextError : if the path isn't a git repo or the commit doesn't exist.
+    Mirrors the shape a real GitHub webhook payload will provide in Phase 2,
+    so swapping the source later is a small change, not a redesign.
     """
 
-    resolved_repo_path  = Path(repo_path).resolve()
-    if not (resolved_repo_path / ".git").exists():
-        raise GitContextError(f"{resolved_repo_path} is not a git repository")
-
-    resolved_sha = _run_git(
-        resolved_repo_path, "rev-parse", commit_sha
-        ).strip()
-    commit_message = _run_git(
-        resolved_repo_path,"log","-1", "--pretty=%B", resolved_sha
-        ).strip()
-    author = _run_git(
-        resolved_repo_path, "log","-1","--pretty=%an",resolved_sha
-        ).strip()
-
-    changed_files_raw = _run_git(resolved_repo_path, "show", "--name-only", "--pretty=format:", resolved_sha )
-
-    changed_files = [line for line in changed_files_raw.splitlines() if line.strip()]
-
-    diff = _run_git(resolved_repo_path, "show", resolved_sha)
-
-    return CommitContext(
-        repo_name=resolved_repo_path.name,
-        commit_sha=resolved_sha,
-        commit_message=commit_message,
-        author=author,
-        changed_files=changed_files,
-        diff=diff,
-        readme_snippet=_read_readme_snippet(resolved_repo_path)
+    repo_name: str = Field(description="Name of the repository, e.g. 'my-project'")
+    commit_sha: str = Field(description="Full commit SHA")
+    commit_message: str = Field(description="Raw commit message")
+    author: str = Field(description="Commit author name")
+    changed_files: list[str] = Field(
+        default_factory=list, description="Paths of files touched by this commit"
+    )
+    diff: str = Field(description="Unified diff of the commit")
+    readme_snippet: str | None = Field(
+        default=None,
+        description="Leading portion of the repo's README, if one exists",
     )
