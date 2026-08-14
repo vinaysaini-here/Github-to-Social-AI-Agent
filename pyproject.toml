@@ -7,7 +7,14 @@ requires-python = ">=3.12"
 dependencies = [
     "langchain-google-genai>=4.3.3",
     "langchain-groq>=1.1.3",
-    "langgraph>=1.2.11",
+    "langgraph",
     "pydantic>=2.13.4",
     "pydantic-settings>=2.15.0",
 ]
+
+
+[project.scripts]
+social-agent = "social_agent.main:main"
+
+[tool.uv]
+package = true
