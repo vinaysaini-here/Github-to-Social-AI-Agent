@@ -22,7 +22,8 @@ class Settings(BaseSettings):
     worthiness_threshold: int = 60
     max_verification_retries: int = 3
     output_dir: str = "output/drafts"
-
+    github_webhook_secret: SecretStr
+    github_token: SecretStr
 
 
 
