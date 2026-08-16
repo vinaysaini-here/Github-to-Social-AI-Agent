@@ -24,6 +24,7 @@ class Settings(BaseSettings):
     output_dir: str = "output/drafts"
     github_webhook_secret: SecretStr
     github_token: SecretStr
+    redis_url: str = "redis://localhost:6379"
 
 
 

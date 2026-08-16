@@ -7,8 +7,7 @@ from social_agent.graph import build_graph
 from social_agent.models.context import CommitContext
 
 
-def run_pipeline(repo_path: str, commit_sha: str = "HEAD") -> dict:
-    context = collect_context(repo_path, commit_sha)
+def run_pipeline_from_context(context: CommitContext) -> dict:
     graph = build_graph()
     final_state = graph.invoke({"context": context})
 
@@ -17,6 +16,11 @@ def run_pipeline(repo_path: str, commit_sha: str = "HEAD") -> dict:
     _print_summary(result, output_path)
 
     return result
+
+
+def run_pipeline(repo_path: str, commit_sha: str = "HEAD") -> dict:
+    context = collect_context(repo_path, commit_sha)
+    return run_pipeline_from_context(context)
 
 
 def _build_result(context: CommitContext, final_state: dict) -> dict:
