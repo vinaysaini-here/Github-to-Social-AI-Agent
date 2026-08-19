@@ -5,12 +5,14 @@ from arq.connections import RedisSettings
 from social_agent.config import get_settings
 from social_agent.models.context import CommitContext
 from social_agent.pipeline import run_pipeline_from_context
+from social_agent.db.repository import save_pipeline_result
 
 
 async def process_push(ctx, context_dict: dict) -> dict:
-    """arq task: runs the AI pipeline for one push event in a worker process."""
     context = CommitContext(**context_dict)
-    return await asyncio.to_thread(run_pipeline_from_context, context)
+    result = await asyncio.to_thread(run_pipeline_from_context, context)
+    await save_pipeline_result(result)
+    return result
 
 
 def get_redis_settings() -> RedisSettings:

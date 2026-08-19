@@ -25,6 +25,8 @@ class Settings(BaseSettings):
     github_webhook_secret: SecretStr
     github_token: SecretStr
     redis_url: str = "redis://localhost:6379"
+    mongodb_url: str = "mongodb://localhost:27017"
+    mongodb_db_name: str = "social_agent"
 
 
 
