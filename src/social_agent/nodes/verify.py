@@ -23,6 +23,7 @@ def generate_and_verify(
     context: CommitContext,
     classification: ChangeClassification,
     worthiness: WorthinessScore,
+    feedback: str | None = None, # type: ignore
 ) -> tuple[ContentDraft, VerificationResult]:
     """Generate drafts, verify grounding, and regenerate with feedback on failure.
 

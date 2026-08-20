@@ -25,6 +25,7 @@ def run_pipeline(repo_path: str, commit_sha: str = "HEAD") -> dict:
 
 def _build_result(context: CommitContext, final_state: dict) -> dict:
     result = {
+        "context": context.model_dump(),
         "repo_name": context.repo_name,
         "commit_sha": context.commit_sha,
         "commit_message": context.commit_message,
