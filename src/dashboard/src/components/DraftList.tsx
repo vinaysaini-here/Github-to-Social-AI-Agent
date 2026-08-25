@@ -9,28 +9,49 @@ export function DraftList() {
 
   useEffect(() => {
     fetchDrafts()
-      .then(setDrafts)
+      .then((data) => {
+        if (!Array.isArray(data)) {
+          console.error("Expected an array from /drafts, got:", data);
+          setDrafts([]);
+          return;
+        }
+        setDrafts(data);
+      })
       .catch((err) => setError(getErrorMessage(err)));
   }, []);
 
   function handleChange(updated: PipelineResult) {
-    setDrafts((prev) => prev?.map((d) => (d.commit_sha === updated.commit_sha ? updated : d)) ?? null);
+    setDrafts(
+      (prev) =>
+        prev?.map((d) => (d.commit_sha === updated.commit_sha ? updated : d)) ??
+        null,
+    );
   }
 
   if (error) {
-    return <p className="text-danger text-sm p-6">Couldn't load drafts: {error}</p>;
+    return (
+      <p className="text-danger text-sm p-6">Couldn't load drafts: {error}</p>
+    );
   }
   if (drafts === null) {
     return <p className="text-muted text-sm p-6">Loading drafts…</p>;
   }
   if (drafts.length === 0) {
-    return <p className="text-muted text-sm p-6">No drafts yet — push a commit and check back.</p>;
+    return (
+      <p className="text-muted text-sm p-6">
+        No drafts yet — push a commit and check back.
+      </p>
+    );
   }
 
   return (
     <div className="max-w-2xl mx-auto py-8 px-4 space-y-4">
       {drafts.map((draft) => (
-        <DraftCard key={draft.commit_sha} result={draft} onChange={handleChange} />
+        <DraftCard
+          key={draft.commit_sha}
+          result={draft}
+          onChange={handleChange}
+        />
       ))}
     </div>
   );
