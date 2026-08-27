@@ -27,6 +27,7 @@ class Settings(BaseSettings):
     redis_url: str = "redis://localhost:6379"
     mongodb_url: str = "mongodb://localhost:27017"
     mongodb_db_name: str = "social_agent"
+    max_media_size_mb: int = 10
 
 
 
