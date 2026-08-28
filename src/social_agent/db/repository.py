@@ -48,3 +48,11 @@ async def update_draft(repo_name: str, commit_sha: str, draft: dict, verificatio
     )
     return result.matched_count > 0
 
+
+async def attach_media(repo_name: str, commit_sha: str, media: dict) -> bool:
+    db = get_database()
+    result = await db.pipeline_results.update_one(
+        {"repo_name": repo_name, "commit_sha": commit_sha},
+        {"$set": {"media": media}},
+    )
+    return result.matched_count > 0

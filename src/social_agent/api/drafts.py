@@ -1,14 +1,15 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException , File ,UploadFile
 import asyncio
 from pydantic import BaseModel
 
 from social_agent.db.repository import get_draft, list_drafts, update_approval_status
 
-from social_agent.db.repository import update_draft  
+from social_agent.db.repository import update_draft , attach_media
 from social_agent.models.classification import ChangeClassification
 from social_agent.models.context import CommitContext
 from social_agent.models.worthiness import WorthinessScore
 from social_agent.nodes.verify import generate_and_verify
+from social_agent.media.storage import save_media_bytes
 
 
 router = APIRouter(prefix="/drafts")
@@ -68,3 +69,34 @@ async def regenerate_draft(repo_name: str, commit_sha: str, body: RegenerateRequ
     await update_draft(repo_name, commit_sha, draft.model_dump(), verification.model_dump())
 
     return {"status": "regenerated", "verified": verification.verified, "draft": draft.model_dump()}
+
+
+
+
+from fastapi import File, UploadFile
+
+from social_agent.db.repository import attach_media  # existing imports me add karo
+from social_agent.guardrails.media_validation import MediaValidationError, validate_media_upload
+from social_agent.media.storage import save_media_bytes
+
+
+@router.post("/{repo_name}/{commit_sha}/media")
+async def upload_media(repo_name: str, commit_sha: str, file: UploadFile = File(...)):
+    stored = await get_draft(repo_name, commit_sha)
+    if stored is None:
+        raise HTTPException(status_code=404, detail="draft not found")
+
+    try:
+        content = await validate_media_upload(file)
+    except MediaValidationError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+
+    destination = save_media_bytes(content, file.filename)
+    media = {
+        "filename": file.filename,
+        "content_type": file.content_type,
+        "url": f"/media/{destination.name}",
+    }
+
+    await attach_media(repo_name, commit_sha, media)
+    return {"status": "attached", "media": media}
