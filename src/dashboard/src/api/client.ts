@@ -1,5 +1,5 @@
 import axios from "axios";
-import type { PipelineResult } from "../types";
+import type { PipelineResult , Media } from "../types";
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
@@ -33,6 +33,17 @@ export async function regenerateDraft(
   const { data } = await api.post(
     `/drafts/${encodeURIComponent(repoName)}/${commitSha}/regenerate`,
     { note: note ?? null }
+  );
+  return data;
+}
+
+export async function uploadMedia(repoName: string, commitSha: string, file: File): Promise<{ media: Media }> {
+  const formData = new FormData();
+  formData.append("file", file);
+  const { data } = await api.post(
+    `/drafts/${encodeURIComponent(repoName)}/${commitSha}/media`,
+    formData,
+    { headers: { "Content-Type": "multipart/form-data" } }
   );
   return data;
 }

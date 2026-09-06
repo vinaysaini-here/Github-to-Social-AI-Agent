@@ -28,3 +28,22 @@ export interface PipelineResult {
   draft: Draft;
   verification: Verification;
 }
+
+
+export interface Media {
+  filename: string | null;
+  content_type: string | null;
+  url: string;
+}
+
+export interface PipelineResult {
+  repo_name: string;
+  commit_sha: string;
+  commit_message: string;
+  approval_status: "pending" | "approved" | "rejected";
+  classification: Classification;
+  worthiness: Worthiness;
+  draft: Draft;
+  verification: Verification;
+  media: Media | null;
+}

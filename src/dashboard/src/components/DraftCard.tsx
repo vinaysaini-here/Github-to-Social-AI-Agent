@@ -1,6 +1,12 @@
 import { useState } from "react";
 import type { PipelineResult } from "../types";
-import { approveDraft, rejectDraft, regenerateDraft, getErrorMessage } from "../api/client";
+import {
+  approveDraft,
+  rejectDraft,
+  regenerateDraft,
+  uploadMedia,
+  getErrorMessage,
+} from "../api/client";
 
 interface Props {
   result: PipelineResult;
@@ -55,15 +61,41 @@ export function DraftCard({ result, onChange }: Props) {
     setBusy(true);
     setError(null);
     try {
-      const { draft, verified } = await regenerateDraft(result.repo_name, result.commit_sha, note || undefined);
+      const { draft, verified } = await regenerateDraft(
+        result.repo_name,
+        result.commit_sha,
+        note || undefined,
+      );
       onChange({
         ...result,
         draft,
-        verification: { verified, issues: verified ? [] : result.verification.issues },
+        verification: {
+          verified,
+          issues: verified ? [] : result.verification.issues,
+        },
         approval_status: "pending",
       });
       setNote("");
       setShowNoteInput(false);
+    } catch (err) {
+      setError(getErrorMessage(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleMediaUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const { media } = await uploadMedia(
+        result.repo_name,
+        result.commit_sha,
+        file,
+      );
+      onChange({ ...result, media });
     } catch (err) {
       setError(getErrorMessage(err));
     } finally {
@@ -78,22 +110,30 @@ export function DraftCard({ result, onChange }: Props) {
           <p className="font-mono text-xs text-muted">
             {result.repo_name} · {result.commit_sha.slice(0, 8)}
           </p>
-          <p className="text-ink font-medium mt-0.5">{result.commit_message.split("\n")[0]}</p>
+          <p className="text-ink font-medium mt-0.5">
+            {result.commit_message.split("\n")[0]}
+          </p>
         </div>
-        <span className={`text-xs px-2 py-1 rounded-full font-medium shrink-0 ${STATUS_STYLES[result.approval_status]}`}>
+        <span
+          className={`text-xs px-2 py-1 rounded-full font-medium shrink-0 ${STATUS_STYLES[result.approval_status]}`}
+        >
           {result.approval_status}
         </span>
       </header>
 
       <div className="flex items-center gap-3">
-        <span className="text-xs font-mono text-muted uppercase">{result.classification.change_type}</span>
+        <span className="text-xs font-mono text-muted uppercase">
+          {result.classification.change_type}
+        </span>
         <div className="flex-1 h-1.5 rounded-full bg-line overflow-hidden">
           <div
             className={`h-full rounded-full ${worthinessColor(result.worthiness.score)}`}
             style={{ width: `${result.worthiness.score}%` }}
           />
         </div>
-        <span className="text-xs font-mono text-muted">{result.worthiness.score}/100</span>
+        <span className="text-xs font-mono text-muted">
+          {result.worthiness.score}/100
+        </span>
       </div>
       <p className="text-xs text-muted">{result.worthiness.reason}</p>
 
@@ -104,13 +144,29 @@ export function DraftCard({ result, onChange }: Props) {
       )}
 
       <div className="space-y-3">
+        {result.media &&
+          (result.media.content_type?.startsWith("image/") ? (
+            <img
+              src={`${import.meta.env.VITE_API_URL}${result.media.url}`}
+              alt=""
+              className="rounded max-h-48 object-cover"
+            />
+          ) : (
+            <p className="text-xs text-muted">
+              Attached: {result.media.filename}
+            </p>
+          ))}
         <div>
           <p className="text-xs font-mono text-muted mb-1">LinkedIn</p>
-          <p className="text-sm text-ink whitespace-pre-wrap">{result.draft.linkedin_post}</p>
+          <p className="text-sm text-ink whitespace-pre-wrap">
+            {result.draft.linkedin_post}
+          </p>
         </div>
         <div>
           <p className="text-xs font-mono text-muted mb-1">X</p>
-          <p className="text-sm text-ink whitespace-pre-wrap">{result.draft.x_post}</p>
+          <p className="text-sm text-ink whitespace-pre-wrap">
+            {result.draft.x_post}
+          </p>
         </div>
       </div>
 
@@ -142,12 +198,24 @@ export function DraftCard({ result, onChange }: Props) {
           Reject
         </button>
         <button
-          onClick={showNoteInput ? handleRegenerate : () => setShowNoteInput(true)}
+          onClick={
+            showNoteInput ? handleRegenerate : () => setShowNoteInput(true)
+          }
           disabled={busy}
           className="text-sm px-3 py-1.5 rounded border border-line text-ink disabled:opacity-50"
         >
           {showNoteInput ? "Send & regenerate" : "Regenerate"}
         </button>
+        <label className="text-sm px-3 py-1.5 rounded border border-line text-ink cursor-pointer">
+          {result.media ? "Replace media" : "Attach media"}
+          <input
+            type="file"
+            accept="image/*,video/*"
+            onChange={handleMediaUpload}
+            disabled={busy}
+            className="hidden"
+          />
+        </label>
       </div>
     </article>
   );
