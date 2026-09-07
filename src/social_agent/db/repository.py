@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timezone , timedelta
 
 from social_agent.db.client import get_database
 
@@ -56,3 +56,23 @@ async def attach_media(repo_name: str, commit_sha: str, media: dict) -> bool:
         {"$set": {"media": media}},
     )
     return result.matched_count > 0
+
+
+
+async def save_linkedin_token(person_urn: str, encrypted_access_token: str, expires_in: int) -> None:
+    db = get_database()
+    expires_at = datetime.now(timezone.utc) + timedelta(seconds=expires_in)
+    await db.linkedin_tokens.update_one(
+        {"person_urn": person_urn},
+        {"$set": {
+            "encrypted_access_token": encrypted_access_token,
+            "expires_at": expires_at,
+            "updated_at": datetime.now(timezone.utc),
+        }},
+        upsert=True,
+    )
+
+
+async def get_linkedin_token(person_urn: str) -> dict | None:
+    db = get_database()
+    return await db.linkedin_tokens.find_one({"person_urn": person_urn})

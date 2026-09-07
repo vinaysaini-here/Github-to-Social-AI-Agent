@@ -12,6 +12,8 @@ from social_agent.api.routes import router as webhook_router
 from social_agent.queue.tasks import get_redis_settings
 from social_agent.config import get_settings
 
+from social_agent.api.linkedin_auth import router as linkedin_auth_router
+
 
 
 @asynccontextmanager
@@ -30,10 +32,11 @@ app.mount("/media", StaticFiles(directory=media_dir), name="media")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  # Vite's default dev port
+    allow_origins=["http://localhost:5173"],  
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
 
 app.include_router(webhook_router)
 app.include_router(drafts_router)
+app.include_router(linkedin_auth_router)
