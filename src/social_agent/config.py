@@ -28,6 +28,10 @@ class Settings(BaseSettings):
     mongodb_url: str = "mongodb://localhost:27017"
     mongodb_db_name: str = "social_agent"
     max_media_size_mb: int = 10
+    linkedin_client_id: str
+    linkedin_client_secret: SecretStr
+    linkedin_redirect_uri: str = "http://localhost:8000/auth/linkedin/callback"
+    token_encryption_key: SecretStr
 
 
 
