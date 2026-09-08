@@ -32,6 +32,7 @@ class Settings(BaseSettings):
     linkedin_client_secret: SecretStr
     linkedin_redirect_uri: str = "http://localhost:8000/auth/linkedin/callback"
     token_encryption_key: SecretStr
+    linkedin_api_version: str = "202604"
 
 
 
