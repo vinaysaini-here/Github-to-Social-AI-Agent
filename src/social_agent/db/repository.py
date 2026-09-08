@@ -76,3 +76,26 @@ async def save_linkedin_token(person_urn: str, encrypted_access_token: str, expi
 async def get_linkedin_token(person_urn: str) -> dict | None:
     db = get_database()
     return await db.linkedin_tokens.find_one({"person_urn": person_urn})
+
+
+
+async def get_any_linkedin_token() -> dict | None:
+    """Single-user MVP: returns whichever LinkedIn token is on file.
+    Phase 5 (multi-user) will need to associate a specific token per draft/user."""
+    db = get_database()
+    return await db.linkedin_tokens.find_one({})
+
+
+async def mark_published(repo_name: str, commit_sha: str, platform: str, post_urn: str) -> bool:
+    db = get_database()
+    result = await db.pipeline_results.update_one(
+        {"repo_name": repo_name, "commit_sha": commit_sha},
+        {"$set": {
+            "approval_status": "published",
+            f"published.{platform}": {
+                "post_urn": post_urn,
+                "published_at": datetime.now(timezone.utc),
+            },
+        }},
+    )
+    return result.matched_count > 0
