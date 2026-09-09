@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException , File ,UploadFile
+from fastapi import APIRouter, HTTPException , File ,UploadFile , Request
 import asyncio
 from pydantic import BaseModel
 
@@ -12,6 +12,13 @@ from social_agent.nodes.verify import generate_and_verify
 from social_agent.media.storage import save_media_bytes
 from social_agent.security.token_encryption import decrypt_token
 from social_agent.social.linkedin import LinkedInPublishError , publish_text_post
+
+
+from social_agent.guardrails.media_validation import MediaValidationError, validate_media_upload
+
+
+
+from social_agent.social.rate_limit import RateLimitExceededError, check_and_increment_quota
 
 
 router = APIRouter(prefix="/drafts")
@@ -75,12 +82,6 @@ async def regenerate_draft(repo_name: str, commit_sha: str, body: RegenerateRequ
 
 
 
-from fastapi import File, UploadFile
-
-from social_agent.db.repository import attach_media  # existing imports me add karo
-from social_agent.guardrails.media_validation import MediaValidationError, validate_media_upload
-from social_agent.media.storage import save_media_bytes
-
 
 @router.post("/{repo_name}/{commit_sha}/media")
 async def upload_media(repo_name: str, commit_sha: str, file: UploadFile = File(...)):
@@ -106,7 +107,7 @@ async def upload_media(repo_name: str, commit_sha: str, file: UploadFile = File(
 
 
 @router.post("/{repo_name}/{commit_sha}/publish")
-async def publish_draft(repo_name: str, commit_sha: str):
+async def publish_draft(repo_name: str, commit_sha: str, request: Request):
     stored = await get_draft(repo_name, commit_sha)
     if stored is None:
         raise HTTPException(status_code=404, detail="draft not found")
@@ -116,6 +117,11 @@ async def publish_draft(repo_name: str, commit_sha: str):
     token_doc = await get_any_linkedin_token()
     if token_doc is None:
         raise HTTPException(status_code=412, detail="no LinkedIn account connected — visit /auth/linkedin/login")
+
+    try:
+        await check_and_increment_quota(request.app.state.arq_pool, token_doc["person_urn"])
+    except RateLimitExceededError as exc:
+        raise HTTPException(status_code=429, detail=str(exc))
 
     access_token = decrypt_token(token_doc["encrypted_access_token"])
     text = stored["draft"]["linkedin_post"]

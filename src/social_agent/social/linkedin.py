@@ -1,4 +1,5 @@
 import httpx
+from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
 
 from social_agent.config import get_settings
 
@@ -6,11 +7,20 @@ POSTS_URL = "https://api.linkedin.com/rest/posts"
 
 
 class LinkedInPublishError(RuntimeError):
-    """Raised when LinkedIn rejects or fails a publish request."""
+    """Raised when LinkedIn rejects a publish request outright (not retryable)."""
 
 
+class LinkedInTransientError(LinkedInPublishError):
+    """A LinkedIn failure that might succeed on retry (429 / 5xx)."""
+
+
+@retry(
+    retry=retry_if_exception_type(LinkedInTransientError),
+    stop=stop_after_attempt(3),
+    wait=wait_exponential(multiplier=1, min=2, max=20),
+    reraise=True,
+)
 async def publish_text_post(access_token: str, person_urn: str, text: str) -> str:
-    """Publish a text post to LinkedIn. Returns the new post's URN."""
     settings = get_settings()
     headers = {
         "Authorization": f"Bearer {access_token}",
@@ -33,6 +43,9 @@ async def publish_text_post(access_token: str, person_urn: str, text: str) -> st
 
     async with httpx.AsyncClient(timeout=10) as client:
         response = await client.post(POSTS_URL, headers=headers, json=body)
+
+    if response.status_code == 429 or response.status_code >= 500:
+        raise LinkedInTransientError(f"LinkedIn returned {response.status_code}: {response.text}")
 
     if response.status_code != 201:
         raise LinkedInPublishError(f"LinkedIn returned {response.status_code}: {response.text}")
