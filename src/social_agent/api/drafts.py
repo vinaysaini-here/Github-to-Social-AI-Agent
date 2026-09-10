@@ -16,6 +16,8 @@ from social_agent.social.linkedin import LinkedInPublishError , publish_text_pos
 
 from social_agent.guardrails.media_validation import MediaValidationError, validate_media_upload
 
+from social_agent.guardrails.safety import check_content_safety
+
 
 
 from social_agent.social.rate_limit import RateLimitExceededError, check_and_increment_quota
@@ -123,8 +125,13 @@ async def publish_draft(repo_name: str, commit_sha: str, request: Request):
     except RateLimitExceededError as exc:
         raise HTTPException(status_code=429, detail=str(exc))
 
-    access_token = decrypt_token(token_doc["encrypted_access_token"])
     text = stored["draft"]["linkedin_post"]
+
+    safety = await check_content_safety(text)
+    if not safety.safe:
+        raise HTTPException(status_code=422, detail=f"content safety check failed: {safety.reason}")
+
+    access_token = decrypt_token(token_doc["encrypted_access_token"])
 
     try:
         post_urn = await publish_text_post(access_token, token_doc["person_urn"], text)
