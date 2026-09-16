@@ -13,11 +13,15 @@ from social_agent.queue.tasks import get_redis_settings
 from social_agent.config import get_settings
 
 from social_agent.api.linkedin_auth import router as linkedin_auth_router
+from social_agent.observability import enable_langsmith_tracing
 
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+
+    enable_langsmith_tracing()
+
     app.state.arq_pool = await create_pool(get_redis_settings())
     yield
     await app.state.arq_pool.close()
