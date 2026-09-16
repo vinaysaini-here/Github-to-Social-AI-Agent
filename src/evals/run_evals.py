@@ -1,6 +1,7 @@
 from evals.dataset import CASES, EvalCase
 from social_agent.guardrails.prefilter import should_skip
 from social_agent.nodes.classify import classify_and_score
+from social_agent.observability import enable_langsmith_tracing
 
 
 def _check_case(case: EvalCase) -> tuple[bool, list[str]]:
@@ -28,6 +29,8 @@ def _check_case(case: EvalCase) -> tuple[bool, list[str]]:
 
 
 def main() -> None:
+    enable_langsmith_tracing()
+
     passed = 0
     for case in CASES:
         ok, failures = _check_case(case)

@@ -2,9 +2,13 @@ import argparse
 import sys
 
 from social_agent.pipeline import run_pipeline
+from social_agent.observability import enable_langsmith_tracing
 
 
 def main() -> None:
+
+    enable_langsmith_tracing()
+
     parser = argparse.ArgumentParser(description="Turn a git commit into LinkedIn/X drafts.")
     parser.add_argument("repo_path", help="Path to a local git repository")
     parser.add_argument("commit_sha", nargs="?", default="HEAD", help="Commit to process (default: HEAD)")

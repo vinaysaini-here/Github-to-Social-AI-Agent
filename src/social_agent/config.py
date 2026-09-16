@@ -33,6 +33,10 @@ class Settings(BaseSettings):
     linkedin_redirect_uri: str = "http://localhost:8000/auth/linkedin/callback"
     token_encryption_key: SecretStr
     linkedin_api_version: str = "202604"
+    langsmith_api_key: SecretStr | None = None
+    langsmith_project: str = "github-social-agent"
+    langsmith_tracing: bool = False
+    langsmith_endpoint: str = "https://api.smith.langchain.com"
 
 
 
