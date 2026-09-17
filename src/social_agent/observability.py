@@ -13,4 +13,4 @@ def enable_langsmith_tracing() -> None:
     os.environ["LANGSMITH_ENDPOINT"] = settings.langsmith_endpoint
     os.environ["LANGSMITH_API_KEY"] = settings.langsmith_api_key.get_secret_value()
     os.environ["LANGSMITH_PROJECT"] = settings.langsmith_project
-    print(f"[langsmith] tracing enabled -> project '{settings.langsmith_project}'")
+    # print(f"[langsmith] tracing enabled -> project '{settings.langsmith_project}'")

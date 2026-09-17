@@ -29,7 +29,7 @@ export async function regenerateDraft(
   repoName: string,
   commitSha: string,
   note?: string
-): Promise<{ draft: PipelineResult["draft"]; verified: boolean }> {
+): Promise<{ draft: PipelineResult["draft"]; verified: boolean; issues: string[] }> {
   const { data } = await api.post(
     `/drafts/${encodeURIComponent(repoName)}/${commitSha}/regenerate`,
     { note: note ?? null }

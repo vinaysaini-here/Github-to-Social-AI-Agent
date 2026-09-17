@@ -57,32 +57,25 @@ export function DraftCard({ result, onChange }: Props) {
     }
   }
 
-  async function handleRegenerate() {
-    setBusy(true);
-    setError(null);
-    try {
-      const { draft, verified } = await regenerateDraft(
-        result.repo_name,
-        result.commit_sha,
-        note || undefined,
-      );
-      onChange({
-        ...result,
-        draft,
-        verification: {
-          verified,
-          issues: verified ? [] : result.verification.issues,
-        },
-        approval_status: "pending",
-      });
-      setNote("");
-      setShowNoteInput(false);
-    } catch (err) {
-      setError(getErrorMessage(err));
-    } finally {
-      setBusy(false);
-    }
+async function handleRegenerate() {
+  setBusy(true);
+  setError(null);
+  try {
+    const { draft, verified, issues } = await regenerateDraft(result.repo_name, result.commit_sha, note || undefined);
+    onChange({
+      ...result,
+      draft,
+      verification: { verified, issues },
+      approval_status: "pending",
+    });
+    setNote("");
+    setShowNoteInput(false);
+  } catch (err) {
+    setError(getErrorMessage(err));
+  } finally {
+    setBusy(false);
   }
+}
 
   async function handleMediaUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
