@@ -79,7 +79,12 @@ async def regenerate_draft(repo_name: str, commit_sha: str, body: RegenerateRequ
 
     await update_draft(repo_name, commit_sha, draft.model_dump(), verification.model_dump())
 
-    return {"status": "regenerated", "verified": verification.verified, "draft": draft.model_dump()}
+    return {
+        "status": "regenerated",
+        "verified": verification.verified,
+        "issues": verification.issues,
+        "draft": draft.model_dump(),
+    }
 
 
 
