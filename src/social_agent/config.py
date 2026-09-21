@@ -37,6 +37,9 @@ class Settings(BaseSettings):
     langsmith_project: str = "github-social-agent"
     langsmith_tracing: bool = False
     langsmith_endpoint: str = "https://api.smith.langchain.com"
+    github_oauth_client_id: str
+    github_oauth_client_secret: SecretStr
+    github_oauth_redirect_uri: str = "http://localhost:8000/auth/github/callback"
 
 
 
