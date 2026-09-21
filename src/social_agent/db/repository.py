@@ -99,3 +99,18 @@ async def mark_published(repo_name: str, commit_sha: str, platform: str, post_ur
         }},
     )
     return result.matched_count > 0
+
+
+
+
+
+async def save_github_user(github_login: str, encrypted_access_token: str) -> None:
+    db = get_database()
+    await db.github_users.update_one(
+        {"github_login": github_login},
+        {"$set": {
+            "encrypted_access_token": encrypted_access_token,
+            "updated_at": datetime.now(timezone.utc),
+        }},
+        upsert=True,
+    )

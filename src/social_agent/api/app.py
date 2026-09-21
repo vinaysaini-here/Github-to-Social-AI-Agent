@@ -15,6 +15,8 @@ from social_agent.config import get_settings
 from social_agent.api.linkedin_auth import router as linkedin_auth_router
 from social_agent.observability import enable_langsmith_tracing
 
+from social_agent.api.github_auth import router as github_auth_router
+
 
 
 @asynccontextmanager
@@ -44,3 +46,4 @@ app.add_middleware(
 app.include_router(webhook_router)
 app.include_router(drafts_router)
 app.include_router(linkedin_auth_router)
+app.include_router(github_auth_router)
