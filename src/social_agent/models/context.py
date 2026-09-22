@@ -9,6 +9,10 @@ class CommitContext(BaseModel):
     """
 
     repo_name: str = Field(description="Name of the repository, e.g. 'my-project'")
+    repo_full_name: str | None = Field(
+        default=None,
+        description="owner/repo — used as the unique key for per-repo config; None for local CLI runs",
+    )
     commit_sha: str = Field(description="Full commit SHA")
     commit_message: str = Field(description="Raw commit message")
     author: str = Field(description="Commit author name")

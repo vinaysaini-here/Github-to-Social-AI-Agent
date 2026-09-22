@@ -114,3 +114,18 @@ async def save_github_user(github_login: str, encrypted_access_token: str) -> No
         }},
         upsert=True,
     )
+
+
+
+async def get_repo_config(repo_full_name: str) -> dict | None:
+    db = get_database()
+    return await db.repo_configs.find_one({"repo_full_name": repo_full_name})
+
+
+async def upsert_repo_config(config: dict) -> None:
+    db = get_database()
+    await db.repo_configs.update_one(
+        {"repo_full_name": config["repo_full_name"]},
+        {"$set": config},
+        upsert=True,
+    )
