@@ -7,16 +7,18 @@ from social_agent.graph import build_graph
 from social_agent.models.context import CommitContext
 
 
-def run_pipeline_from_context(context: CommitContext) -> dict:
+def run_pipeline_from_context(context: CommitContext, worthiness_threshold: int | None = None) -> dict:
     graph = build_graph()
-    final_state = graph.invoke({"context": context})
+    initial_state: dict = {"context": context}
+    if worthiness_threshold is not None:
+        initial_state["worthiness_threshold"] = worthiness_threshold
+
+    final_state = graph.invoke(initial_state) # type: ignore
 
     result = _build_result(context, final_state)
     output_path = _save_result(result)
     _print_summary(result, output_path)
-
     return result
-
 
 def run_pipeline(repo_path: str, commit_sha: str = "HEAD") -> dict:
     context = collect_context(repo_path, commit_sha)
@@ -32,7 +34,7 @@ def _build_result(context: CommitContext, final_state: dict) -> dict:
         "skip": final_state.get("skip", False),
         "skip_reason": final_state.get("skip_reason"),
         "error": final_state.get("error"),
-        "media": None,  # placeholder — AI-generated images deferred, no free Gemini tier yet
+        "media": None,  
     }
 
     for key in ("classification", "worthiness", "draft", "verification"):

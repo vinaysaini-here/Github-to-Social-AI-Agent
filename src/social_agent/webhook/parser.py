@@ -31,6 +31,7 @@ def parse_push_event(payload: dict) -> CommitContext:
 
     return CommitContext(
         repo_name=repository.get("name", repo_full_name),
+        repo_full_name=repo_full_name, 
         commit_sha=after_sha,
         commit_message=_combine_commit_messages(commits, head_commit),
         author=head_commit.get("author", {}).get("name", "unknown"),

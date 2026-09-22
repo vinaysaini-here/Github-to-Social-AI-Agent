@@ -15,6 +15,7 @@ from social_agent.nodes.verify import generate_and_verify
 
 class PipelineState(TypedDict):
     context: CommitContext
+    worthiness_threshold: NotRequired[int]
     skip: NotRequired[bool]
     skip_reason: NotRequired[str | None]
     classification: NotRequired[ChangeClassification]
@@ -58,9 +59,13 @@ def _route_after_classify(state: PipelineState) -> str:
         return END
     worthiness = state.get("worthiness")
     if worthiness is None:
-        return END 
-    settings = get_settings()
-    return "generate_verify" if worthiness.score >= settings.worthiness_threshold else END
+        return END
+    threshold = state.get("worthiness_threshold")
+    if threshold is None:
+        threshold = get_settings().worthiness_threshold
+    return "generate_verify" if worthiness.score >= threshold else END
+
+
 
 def _route_after_prefilter(state: PipelineState) -> str:
     if state.get("error") or state.get("skip"):
