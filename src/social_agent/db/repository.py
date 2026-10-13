@@ -2,6 +2,8 @@ from datetime import datetime, timezone , timedelta
 
 from social_agent.db.client import get_database
 
+import logging
+
 
 async def save_pipeline_result(result: dict) -> None:
     db = get_database()
@@ -129,3 +131,44 @@ async def upsert_repo_config(config: dict) -> None:
         {"$set": config},
         upsert=True,
     )
+
+
+logger = logging.getLogger(__name__)
+
+
+async def log_audit_event(
+    event_type: str, repo_name: str, commit_sha: str, details: dict | None = None
+) -> None:
+    """Append one event to the audit log. Never raises: a logging failure must not break the action being logged."""
+    try:
+        db = get_database()
+        await db.audit_logs.insert_one({
+            "event_type": event_type,
+            "repo_name": repo_name,
+            "commit_sha": commit_sha,
+            "details": details or {},
+            "created_at": datetime.now(timezone.utc),
+        })
+    except Exception:
+        logger.exception("failed to write audit event %s for %s@%s", event_type, repo_name, commit_sha)
+
+
+async def list_audit_logs(repo_name: str | None = None, limit: int = 50) -> list[dict]:
+    db = get_database()
+    query = {"repo_name": repo_name} if repo_name else {}
+    return [doc async for doc in db.audit_logs.find(query).sort("created_at", -1).limit(limit)]
+
+
+async def get_event_counts() -> dict[str, int]:
+    db = get_database()
+    cursor = db.audit_logs.aggregate([{"$group": {"_id": "$event_type", "count": {"$sum": 1}}}])
+    return {doc["_id"]: doc["count"] async for doc in cursor}
+
+
+async def get_status_counts() -> dict[str, int]:
+    db = get_database()
+    cursor = db.pipeline_results.aggregate([
+        {"$match": {"draft": {"$ne": None}}},
+        {"$group": {"_id": "$approval_status", "count": {"$sum": 1}}},
+    ])
+    return {doc["_id"]: doc["count"] async for doc in cursor}

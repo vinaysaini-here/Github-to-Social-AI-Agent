@@ -17,7 +17,7 @@ from social_agent.observability import enable_langsmith_tracing
 
 from social_agent.api.github_auth import router as github_auth_router
 
-
+from social_agent.api.analytics import router as analytics_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -47,3 +47,4 @@ app.include_router(webhook_router)
 app.include_router(drafts_router)
 app.include_router(linkedin_auth_router)
 app.include_router(github_auth_router)
+app.include_router(analytics_router)
