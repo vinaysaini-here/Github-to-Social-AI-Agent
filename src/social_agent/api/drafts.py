@@ -21,7 +21,7 @@ from social_agent.guardrails.safety import check_content_safety
 
 
 from social_agent.social.rate_limit import RateLimitExceededError, check_and_increment_quota
-
+from social_agent.db.repository import log_audit_event
 
 router = APIRouter(prefix="/drafts")
 
@@ -115,6 +115,40 @@ async def upload_media(repo_name: str, commit_sha: str, file: UploadFile = File(
 
 @router.post("/{repo_name}/{commit_sha}/publish")
 async def publish_draft(repo_name: str, commit_sha: str, request: Request):
+    stored = await get_draft(repo_name, commit_sha)
+    if stored is None:
+        raise HTTPException(status_code=404, detail="draft not found")
+    if stored.get("approval_status") != "approved":
+        raise HTTPException(status_code=409, detail="draft must be approved before publishing")
+
+    token_doc = await get_any_linkedin_token()
+    if token_doc is None:
+        raise HTTPException(status_code=412, detail="no LinkedIn account connected — visit /auth/linkedin/login")
+
+    try:
+        await check_and_increment_quota(request.app.state.arq_pool, token_doc["person_urn"])
+    except RateLimitExceededError as exc:
+        await log_audit_event("publish_blocked_quota", repo_name, commit_sha, {"reason": str(exc)})
+        raise HTTPException(status_code=429, detail=str(exc))
+
+    text = stored["draft"]["linkedin_post"]
+
+    safety = await check_content_safety(text)
+    if not safety.safe:
+        await log_audit_event("publish_blocked_safety", repo_name, commit_sha, {"reason": safety.reason})
+        raise HTTPException(status_code=422, detail=f"content safety check failed: {safety.reason}")
+
+    access_token = decrypt_token(token_doc["encrypted_access_token"])
+
+    try:
+        post_urn = await publish_text_post(access_token, token_doc["person_urn"], text)
+    except LinkedInPublishError as exc:
+        await log_audit_event("publish_failed", repo_name, commit_sha, {"platform": "linkedin", "error": str(exc)})
+        raise HTTPException(status_code=502, detail=str(exc))
+
+    await mark_published(repo_name, commit_sha, "linkedin", post_urn)
+    await log_audit_event("published", repo_name, commit_sha, {"platform": "linkedin", "post_urn": post_urn})
+    return {"status": "published", "post_urn": post_urn}
     stored = await get_draft(repo_name, commit_sha)
     if stored is None:
         raise HTTPException(status_code=404, detail="draft not found")
